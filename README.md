@@ -2,6 +2,9 @@
 
 シンプルで軽量な管理画面システムです。通知管理とデータベース管理に特化しています。
 
+📍 **本番環境URL**: https://admin.hey-watch.me/  
+🐳 **Dockerイメージ**: AWS ECR (`754724220380.dkr.ecr.ap-southeast-2.amazonaws.com/watchme-admin`)
+
 ## 🎯 概要
 
 WatchMe管理画面は、ユーザー、デバイス、通知を効率的に管理するためのWebインターフェースです。
@@ -225,11 +228,142 @@ pip install -r requirements.txt
 2. デバイス一覧が表示される
 3. デバイスステータスや音声データ数を確認
 
+## 🚢 本番環境デプロイ
+
+### Docker構成
+
+本番環境はDocker化されており、AWS ECRからイメージを取得して実行します。
+
+#### 必要なファイル
+
+- `Dockerfile`: FastAPIアプリケーションのコンテナ化
+- `docker-compose.prod.yml`: 本番環境用のDocker Compose設定
+- `.dockerignore`: ビルド時の除外ファイル設定
+- `deploy-ecr.sh`: ECRへのデプロイスクリプト
+
+### デプロイ手順
+
+#### 1. ローカルでのイメージビルドとECRプッシュ
+
+```bash
+# adminディレクトリに移動
+cd /Users/kaya.matsumoto/projects/watchme/admin
+
+# ECRデプロイスクリプトを実行
+./deploy-ecr.sh
+```
+
+#### 2. 本番サーバーへの設定ファイル転送
+
+```bash
+# docker-compose.prod.ymlを転送
+scp -i ~/watchme-key.pem docker-compose.prod.yml ubuntu@3.24.16.82:/home/ubuntu/admin/
+```
+
+#### 3. EC2サーバーでの作業
+
+```bash
+# サーバーにSSH接続
+ssh -i ~/watchme-key.pem ubuntu@3.24.16.82
+
+# adminディレクトリに移動
+cd /home/ubuntu/admin
+
+# 既存のコンテナを停止・削除
+docker stop watchme-admin
+docker rm watchme-admin
+
+# ECRにログイン
+aws ecr get-login-password --region ap-southeast-2 | docker login --username AWS --password-stdin 754724220380.dkr.ecr.ap-southeast-2.amazonaws.com
+
+# 新しいイメージをプル
+docker-compose -f docker-compose.prod.yml pull
+
+# コンテナを起動
+docker-compose -f docker-compose.prod.yml up -d
+
+# 起動確認
+docker ps | grep admin
+docker logs watchme-admin --tail 50
+```
+
+#### 4. 動作確認
+
+```bash
+# サーバー内から確認
+curl http://localhost:9000/
+
+# 外部から確認（ブラウザ）
+# https://admin.hey-watch.me/
+```
+
+### systemdサービス管理
+
+本番環境ではsystemdで自動起動が設定されています：
+
+```bash
+# サービス状態確認
+sudo systemctl status watchme-admin.service
+
+# サービス再起動
+sudo systemctl restart watchme-admin.service
+
+# ログ確認
+journalctl -u watchme-admin.service -f
+```
+
+### ECR情報
+
+- **リポジトリURI**: `754724220380.dkr.ecr.ap-southeast-2.amazonaws.com/watchme-admin`
+- **リージョン**: `ap-southeast-2`
+- **タグ管理**: `latest`と日付タグ（例：`20250821-182110`）
+
+### トラブルシューティング
+
+#### ポート9000が使用中の場合
+
+```bash
+# 使用中のプロセスを確認
+lsof -i :9000
+
+# プロセスを強制終了
+kill -9 <PID>
+```
+
+#### コンテナが起動しない場合
+
+```bash
+# コンテナのログを確認
+docker logs watchme-admin
+
+# 環境変数を確認
+cat .env
+
+# docker-compose設定を確認
+docker-compose -f docker-compose.prod.yml config
+```
+
+#### ロールバック手順
+
+```bash
+# 現在のコンテナを停止・削除
+docker stop watchme-admin
+docker rm watchme-admin
+
+# 以前のバージョンを指定して起動（タグを指定）
+docker run -d --name watchme-admin \
+  -p 9000:9000 \
+  --env-file .env \
+  --network watchme-network \
+  754724220380.dkr.ecr.ap-southeast-2.amazonaws.com/watchme-admin:<previous-tag>
+```
+
 ## 🔒 セキュリティ
 
 - 本番環境では適切な認証機能の追加を推奨
 - 環境変数は`.env`ファイルで管理（Gitには含めない）
 - データベースの直接操作には十分注意
+- ECRイメージは定期的に脆弱性スキャンを実施
 
 ## 📄 ライセンス
 
@@ -241,4 +375,4 @@ pip install -r requirements.txt
 
 ---
 
-最終更新: 2024年8月21日
+最終更新: 2025年8月21日

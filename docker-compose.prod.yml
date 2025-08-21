@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  admin:
+    image: 754724220380.dkr.ecr.ap-southeast-2.amazonaws.com/watchme-admin:latest
+    container_name: watchme-admin
+    ports:
+      - "9000:9000"
+    environment:
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_KEY=${SUPABASE_KEY}
+      - PORT=9000
+    volumes:
+      - ./logs:/app/logs
+    restart: unless-stopped
+    networks:
+      - watchme-network
+
+networks:
+  watchme-network:
+    external: true
