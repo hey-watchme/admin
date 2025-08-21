@@ -1,0 +1,244 @@
+# WatchMe 管理画面
+
+シンプルで軽量な管理画面システムです。通知管理とデータベース管理に特化しています。
+
+## 🎯 概要
+
+WatchMe管理画面は、ユーザー、デバイス、通知を効率的に管理するためのWebインターフェースです。
+APIマネージャーと連携し、データベースの基本的なCRUD操作を提供します。
+
+## ✨ 主な機能
+
+### 🔔 通知管理（トップページ）
+- 通知の一覧表示（ページネーション対応）
+- 新規通知の作成
+- 既読/未読の管理
+- 通知の削除
+- リアルタイム統計表示
+
+### 💾 データベース管理
+#### 👥 ユーザー管理
+- ユーザー一覧の表示
+- ユーザー情報の編集・削除
+- ステータス管理（guest/member/subscriber）
+- サブスクリプションプラン管理
+
+#### 🎤 デバイス管理
+- デバイス一覧の表示
+- デバイス情報の編集・削除
+- デバイスステータス管理（active/inactive/syncing/error）
+- 音声データ収集統計
+
+## 📋 必要な環境
+
+- Python 3.8以上
+- Supabaseアカウント（データベース接続用）
+- 環境変数設定（.envファイル）
+
+## 🚀 クイックスタート
+
+### 1. リポジトリのクローン
+
+```bash
+cd /Users/kaya.matsumoto/projects/watchme/admin
+```
+
+### 2. 環境変数の設定
+
+`.env`ファイルを作成し、以下の環境変数を設定：
+
+```bash
+SUPABASE_URL=your_supabase_project_url
+SUPABASE_KEY=your_supabase_anon_key
+PORT=9000
+```
+
+### 3. 仮想環境のセットアップ
+
+```bash
+# 仮想環境の作成
+python3 -m venv venv
+
+# 仮想環境の有効化
+source venv/bin/activate
+
+# 依存関係のインストール
+pip install -r requirements.txt
+```
+
+### 4. サーバーの起動
+
+```bash
+# 開発環境での起動（自動リロード有効）
+python3 main.py
+
+# またはバックグラウンドで起動
+nohup python3 main.py > server.log 2>&1 &
+```
+
+### 5. アクセス
+
+ブラウザで http://localhost:9000 にアクセス
+
+## 📁 ディレクトリ構成
+
+```
+admin/
+├── main.py              # FastAPIアプリケーションのメインファイル
+├── api/
+│   └── supabase_client.py  # Supabaseクライアント
+├── templates/           # HTMLテンプレート
+│   ├── base.html       # ベーステンプレート
+│   ├── index.html      # 通知管理（トップページ）
+│   ├── users.html      # ユーザー管理ページ
+│   └── devices.html    # デバイス管理ページ
+├── static/             # 静的ファイル（CSS、JS、画像）
+├── venv/               # Python仮想環境
+├── requirements.txt    # Python依存関係
+├── server.log         # サーバーログ
+├── .env               # 環境変数（要作成）
+└── README.md          # このファイル
+```
+
+## 🔌 API エンドポイント
+
+### 統計情報
+| メソッド | エンドポイント | 説明 |
+|---------|--------------|------|
+| GET | `/api/stats` | システム全体の統計情報を取得 |
+
+### 通知管理
+| メソッド | エンドポイント | 説明 |
+|---------|--------------|------|
+| GET | `/api/notifications` | 通知一覧（ページネーション対応） |
+| POST | `/api/notifications` | 新規通知作成 |
+| PUT | `/api/notifications/{id}/read` | 通知を既読にする |
+| DELETE | `/api/notifications/{id}` | 通知を削除 |
+
+### ユーザー管理
+| メソッド | エンドポイント | 説明 |
+|---------|--------------|------|
+| GET | `/api/users` | ユーザー一覧（ページネーション対応） |
+| POST | `/api/users` | 新規ユーザー作成 |
+| PUT | `/api/users/{id}` | ユーザー情報更新 |
+| DELETE | `/api/users/{id}` | ユーザー削除 |
+
+### デバイス管理
+| メソッド | エンドポイント | 説明 |
+|---------|--------------|------|
+| GET | `/api/devices` | デバイス一覧（ページネーション対応） |
+| POST | `/api/devices` | 新規デバイス登録 |
+| PUT | `/api/devices/{id}` | デバイス情報更新 |
+| DELETE | `/api/devices/{id}` | デバイス削除 |
+
+## 🛠️ 開発
+
+### 依存関係
+
+主要なPythonパッケージ：
+- `fastapi==0.104.1` - Webフレームワーク
+- `uvicorn[standard]==0.24.0` - ASGIサーバー
+- `python-dotenv==1.0.0` - 環境変数管理
+- `httpx>=0.26,<0.29` - HTTPクライアント
+- `jinja2==3.1.2` - テンプレートエンジン
+
+### ログの確認
+
+```bash
+# リアルタイムログ監視
+tail -f server.log
+
+# 最新のログ20行を表示
+tail -n 20 server.log
+```
+
+### プロセス管理
+
+```bash
+# 実行中のプロセスを確認
+ps aux | grep "python3 main.py"
+
+# プロセスを停止
+kill <PID>
+
+# ポート9000を使用しているプロセスを確認
+lsof -i :9000
+```
+
+## 🐛 トラブルシューティング
+
+### ポート9000が使用中の場合
+
+```bash
+# 使用中のプロセスを確認
+lsof -i :9000
+
+# プロセスを強制終了
+kill -9 <PID>
+```
+
+### ModuleNotFoundError
+
+```bash
+# 仮想環境が有効化されているか確認
+which python3
+# 出力が venv/bin/python3 でない場合は再度有効化
+source venv/bin/activate
+
+# 依存関係を再インストール
+pip install -r requirements.txt
+```
+
+### データベース接続エラー
+
+1. `.env`ファイルが存在することを確認
+2. `SUPABASE_URL`と`SUPABASE_KEY`が正しく設定されているか確認
+3. Supabaseプロジェクトがアクティブであることを確認
+
+### 仮想環境のリセット
+
+```bash
+# 仮想環境を削除して再作成
+rm -rf venv
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+```
+
+## 📝 使用方法
+
+### 通知の作成
+
+1. トップページの「➕ 新規通知」ボタンをクリック
+2. ユーザーID、タイプ、タイトル、メッセージを入力
+3. 「作成」ボタンをクリック
+
+### ユーザー管理
+
+1. ナビゲーションバーの「データベース管理」→「ユーザー管理」を選択
+2. ユーザー一覧が表示される
+3. 各ユーザーの「編集」または「削除」ボタンで操作
+
+### デバイス管理
+
+1. ナビゲーションバーの「データベース管理」→「デバイス管理」を選択
+2. デバイス一覧が表示される
+3. デバイスステータスや音声データ数を確認
+
+## 🔒 セキュリティ
+
+- 本番環境では適切な認証機能の追加を推奨
+- 環境変数は`.env`ファイルで管理（Gitには含めない）
+- データベースの直接操作には十分注意
+
+## 📄 ライセンス
+
+内部使用のみ
+
+## 📞 サポート
+
+問題が発生した場合は、プロジェクト管理者に連絡してください。
+
+---
+
+最終更新: 2024年8月21日

@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}WatchMe 管理画面{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    {% block head %}{% endblock %}
+</head>
+<body class="bg-gray-50">
+    <!-- ヘッダー -->
+    <header class="bg-white shadow-sm border-b">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center">
+                    <h1 class="text-xl font-semibold text-gray-900">
+                        <a href="/">🎯 WatchMe 管理画面</a>
+                    </h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div id="stats-display" class="text-sm text-gray-500">読み込み中...</div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- ナビゲーション -->
+    <nav class="bg-white border-b">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex space-x-8 h-12 items-center">
+                <a href="/" class="{% block nav_notifications %}{% endblock %} px-3 py-2 text-sm font-medium rounded-md">
+                    🔔 通知管理
+                </a>
+                <div class="relative">
+                    <button id="database-menu" class="{% block nav_database %}{% endblock %} px-3 py-2 text-sm font-medium rounded-md flex items-center">
+                        💾 データベース管理
+                        <svg class="ml-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </button>
+                    <div id="database-dropdown" class="hidden absolute left-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5">
+                        <div class="py-1">
+                            <a href="/database/users" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                👥 ユーザー管理
+                            </a>
+                            <a href="/database/devices" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                🎤 デバイス管理
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- メインコンテンツ -->
+    <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- 共通JavaScript -->
+    <script>
+        // 統計情報の更新
+        async function updateStats() {
+            try {
+                const response = await axios.get('/api/stats');
+                const stats = response.data;
+                const statsDisplay = document.getElementById('stats-display');
+                if (statsDisplay) {
+                    statsDisplay.innerHTML = `
+                        <span class="mr-4">👥 ユーザー: ${stats.users || 0}</span>
+                        <span class="mr-4">🎤 デバイス: ${stats.devices || 0} (アクティブ: ${stats.active_devices || 0})</span>
+                        <span>🔔 通知: ${stats.notifications || 0} (未読: ${stats.unread_notifications || 0})</span>
+                    `;
+                }
+            } catch (error) {
+                console.error('統計情報の取得に失敗:', error);
+            }
+        }
+
+        // データベースメニューのドロップダウン
+        document.addEventListener('DOMContentLoaded', () => {
+            const menuButton = document.getElementById('database-menu');
+            const dropdown = document.getElementById('database-dropdown');
+            
+            menuButton.addEventListener('click', (e) => {
+                e.preventDefault();
+                dropdown.classList.toggle('hidden');
+            });
+            
+            // クリック外で閉じる
+            document.addEventListener('click', (e) => {
+                if (!menuButton.contains(e.target) && !dropdown.contains(e.target)) {
+                    dropdown.classList.add('hidden');
+                }
+            });
+            
+            // 統計情報の初回読み込みと定期更新
+            updateStats();
+            setInterval(updateStats, 30000);
+        });
+    </script>
+    
+    {% block scripts %}{% endblock %}
+</body>
+</html>
