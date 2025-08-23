@@ -58,13 +58,13 @@ class Device(BaseModel):
 
 class Notification(BaseModel):
     id: str
-    user_id: str
-    type: str
+    user_id: Optional[str] = None  # グローバル通知の場合はNULL
+    type: str  # 'global' または 'event'
     title: str
     message: str
     is_read: bool = False
     created_at: datetime
-    triggered_by: Optional[str] = None
+    triggered_by: Optional[str] = None  # 'manual', 'system', etc.
     metadata: Optional[Dict[str, Any]] = None
 
 # =====================================
@@ -139,10 +139,46 @@ async def get_notifications(
 
 @app.post("/api/notifications")
 async def create_notification(notification: Dict[str, Any]):
-    """通知を作成"""
+    """通知を作成（グローバル通知とイベント通知に対応）"""
     try:
+        # バリデーション
+        notification_type = notification.get("type")
+        user_id = notification.get("user_id")
+        
+        if notification_type == "global":
+            # グローバル通知の場合、user_idは明示的にNullに設定
+            notification["user_id"] = None
+            if not notification.get("triggered_by"):
+                notification["triggered_by"] = "manual"
+        elif notification_type == "event":
+            # イベント通知の場合、user_idは必須
+            if not user_id:
+                raise HTTPException(
+                    status_code=400, 
+                    detail="イベント通知にはuser_idが必須です"
+                )
+            if not notification.get("triggered_by"):
+                notification["triggered_by"] = "manual"
+        else:
+            # typeが指定されていない場合のデフォルト処理
+            if user_id:
+                notification["type"] = "event"
+            else:
+                notification["type"] = "global"
+            if not notification.get("triggered_by"):
+                notification["triggered_by"] = "manual"
+        
+        # 必須フィールドのチェック
+        if not notification.get("title") or not notification.get("message"):
+            raise HTTPException(
+                status_code=400,
+                detail="タイトルとメッセージは必須です"
+            )
+        
         result = await supabase_client.insert("notifications", notification)
         return result
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
