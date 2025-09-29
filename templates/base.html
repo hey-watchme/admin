@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}WatchMe 管理画面{% endblock %}</title>
+    <title>{% block title %}WatchMe Admin{% endblock %}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
     {% block head %}{% endblock %}
@@ -15,7 +15,7 @@
             <div class="flex items-center justify-between h-16">
                 <div class="flex items-center">
                     <h1 class="text-xl font-semibold text-gray-900">
-                        <a href="/">🎯 WatchMe 管理画面</a>
+                        <a href="/">🎯 WatchMe Admin</a>
                     </h1>
                 </div>
                 <div class="flex items-center space-x-4">
@@ -71,7 +71,7 @@
                     statsDisplay.innerHTML = `
                         <span class="mr-4">👥 ユーザー: ${stats.users || 0}</span>
                         <span class="mr-4">🎤 デバイス: ${stats.devices || 0} (アクティブ: ${stats.active_devices || 0})</span>
-                        <span>🔔 通知: ${stats.notifications || 0} (未読: ${stats.unread_notifications || 0})</span>
+                        <span>🔔 通知: ${stats.notifications || 0}</span>
                     `;
                 }
             } catch (error) {
