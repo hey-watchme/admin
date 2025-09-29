@@ -107,14 +107,12 @@ async def get_stats():
         # 通知数を取得
         notifications = await supabase_client.select("notifications")
         notifications_count = len(notifications)
-        unread_count = len([n for n in notifications if not n.get("is_read", False)])
         
         return {
             "users": users_count,
             "devices": devices_count,
             "active_devices": len(active_devices),
-            "notifications": notifications_count,
-            "unread_notifications": unread_count
+            "notifications": notifications_count
         }
     except Exception as e:
         return {"users": 0, "devices": 0, "notifications": 0, "error": str(e)}
@@ -179,19 +177,6 @@ async def create_notification(notification: Dict[str, Any]):
         return result
     except HTTPException:
         raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.put("/api/notifications/{notification_id}/read")
-async def mark_notification_read(notification_id: str):
-    """通知を既読にする"""
-    try:
-        result = await supabase_client.update(
-            "notifications",
-            {"is_read": True},
-            {"id": notification_id}
-        )
-        return {"success": True, "message": "通知を既読にしました"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

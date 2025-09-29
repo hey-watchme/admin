@@ -25,7 +25,7 @@
             </div>
 
             <!-- 通知統計 -->
-            <div class="grid grid-cols-1 gap-5 sm:grid-cols-3 mb-6">
+            <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 mb-6">
                 <div class="bg-white overflow-hidden shadow rounded-lg border">
                     <div class="p-5">
                         <div class="flex items-center">
@@ -46,28 +46,12 @@
                     <div class="p-5">
                         <div class="flex items-center">
                             <div class="flex-shrink-0">
-                                <span class="text-2xl">🔴</span>
+                                <span class="text-2xl">🌍</span>
                             </div>
                             <div class="ml-5 w-0 flex-1">
                                 <dl>
-                                    <dt class="text-sm font-medium text-gray-500 truncate">未読通知</dt>
-                                    <dd id="unread-count" class="text-lg font-medium text-gray-900">-</dd>
-                                </dl>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="bg-white overflow-hidden shadow rounded-lg border">
-                    <div class="p-5">
-                        <div class="flex items-center">
-                            <div class="flex-shrink-0">
-                                <span class="text-2xl">✅</span>
-                            </div>
-                            <div class="ml-5 w-0 flex-1">
-                                <dl>
-                                    <dt class="text-sm font-medium text-gray-500 truncate">既読通知</dt>
-                                    <dd id="read-count" class="text-lg font-medium text-gray-900">-</dd>
+                                    <dt class="text-sm font-medium text-gray-500 truncate">グローバル通知数</dt>
+                                    <dd id="global-count" class="text-lg font-medium text-gray-900">-</dd>
                                 </dl>
                             </div>
                         </div>
@@ -80,7 +64,6 @@
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                         <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">状態</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">タイプ</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">タイトル</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">メッセージ</th>
@@ -204,11 +187,6 @@ function displayNotifications(notifications) {
     notifications.forEach(notification => {
         const row = tbody.insertRow();
         row.innerHTML = `
-            <td class="px-6 py-4">
-                ${notification.is_read 
-                    ? '<span class="text-green-600">✓ 既読</span>' 
-                    : '<span class="text-red-600">● 未読</span>'}
-            </td>
             <td class="px-6 py-4 text-sm text-gray-900">
                 <span class="px-2 py-1 text-xs rounded-full ${getTypeColor(notification.type)}">
                     ${notification.type}
@@ -223,8 +201,6 @@ function displayNotifications(notifications) {
             </td>
             <td class="px-6 py-4 text-sm text-gray-500">${new Date(notification.created_at).toLocaleString('ja-JP')}</td>
             <td class="px-6 py-4 text-sm text-right">
-                ${!notification.is_read ? 
-                    `<button onclick="markAsRead('${notification.id}')" class="text-blue-600 hover:text-blue-900 mr-2">既読</button>` : ''}
                 <button onclick="deleteNotification('${notification.id}')" class="text-red-600 hover:text-red-900">削除</button>
             </td>
         `;
@@ -245,12 +221,10 @@ function getTypeColor(type) {
 // 統計を更新
 function updateStats(notifications) {
     const total = notifications.length;
-    const unread = notifications.filter(n => !n.is_read).length;
-    const read = total - unread;
+    const globalCount = notifications.filter(n => n.type === 'global').length;
     
     document.getElementById('total-count').textContent = total;
-    document.getElementById('unread-count').textContent = unread;
-    document.getElementById('read-count').textContent = read;
+    document.getElementById('global-count').textContent = globalCount;
 }
 
 // ページネーションを更新
@@ -272,15 +246,6 @@ function updatePagination(data) {
     `;
 }
 
-// 既読にする
-async function markAsRead(notificationId) {
-    try {
-        await axios.put(`/api/notifications/${notificationId}/read`);
-        loadNotifications(currentPage);
-    } catch (error) {
-        console.error('既読処理に失敗:', error);
-    }
-}
 
 // 通知を削除
 async function deleteNotification(notificationId) {
