@@ -18,6 +18,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 # アプリケーションコードをコピー
 COPY . .
 
+# 必要なディレクトリを作成（FastAPIでstatic/templatesを使う場合）
+# CI/CD標準仕様書に基づく対処
+RUN mkdir -p /app/static /app/templates || true
+
 # ポート9000を公開
 EXPOSE 9000
 
