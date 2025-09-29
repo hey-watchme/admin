@@ -17,6 +17,10 @@ docker pull ${ECR_REGISTRY}/${ECR_REPOSITORY}:latest
 
 # 既存コンテナを停止して削除
 echo "🛑 Stopping existing containers..."
+# 重要: 手動起動やsystemdで起動されたコンテナも確実に停止・削除
+docker stop watchme-admin 2>/dev/null || true
+docker rm watchme-admin 2>/dev/null || true
+# docker-composeで管理されているコンテナも停止
 docker-compose -f docker-compose.prod.yml down || true
 
 # コンテナを起動

@@ -164,7 +164,11 @@ jobs:
           cd /home/ubuntu/admin
           
           echo "🗑️ Cleaning up old Docker images..."
-          # 古いコンテナを停止
+          # 重要: 手動起動やsystemdで起動されたコンテナも確実に停止・削除
+          docker stop watchme-admin 2>/dev/null || true
+          docker rm watchme-admin 2>/dev/null || true
+          
+          # docker-composeで管理されているコンテナも停止
           docker-compose -f docker-compose.prod.yml down || true
           
           # すべての未使用イメージを完全削除（標準仕様書推奨）
