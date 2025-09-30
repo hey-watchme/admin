@@ -253,7 +253,48 @@ pip install -r requirements.txt
 2. デバイス一覧が表示される
 3. デバイスステータスや音声データ数を確認
 
-## 🚢 本番環境デプロイ
+## 🚀 デプロイ（CI/CD自動化済み）
+
+### 概要
+
+**2025年9月よりGitHub Actionsを使用した完全自動CI/CDに移行しました。**
+
+mainブランチにプッシュするだけで自動デプロイが実行されます。
+
+### 🎯 自動デプロイフロー
+
+1. **コードをプッシュ**
+   ```bash
+   git add .
+   git commit -m "your changes"
+   git push origin main
+   ```
+
+2. **GitHub Actionsが自動実行** 🤖
+   - Dockerイメージをビルド
+   - AWS ECRにプッシュ
+   - EC2サーバーに自動デプロイ
+   - 環境変数を自動設定
+   - コンテナを再起動
+
+3. **デプロイ完了** ✅
+   - https://admin.hey-watch.me/ で新バージョンが稼働
+
+### 🔧 CI/CD設定
+
+#### GitHub Actionsワークフロー
+- **ファイル**: `.github/workflows/deploy-to-ecr.yml`
+- **トリガー**: mainブランチへのプッシュ
+- **処理時間**: 約3-5分
+
+#### 必要なGitHub Secrets（設定済み）
+- `AWS_ACCESS_KEY_ID`
+- `AWS_SECRET_ACCESS_KEY`
+- `EC2_HOST`
+- `EC2_SSH_PRIVATE_KEY`
+- `EC2_USER`
+- `SUPABASE_URL`
+- `SUPABASE_KEY`
 
 ### Docker構成
 
@@ -266,7 +307,20 @@ pip install -r requirements.txt
 - `.dockerignore`: ビルド時の除外ファイル設定
 - `deploy-ecr.sh`: ECRへのデプロイスクリプト
 
-### デプロイ手順
+### 🔍 デプロイ状況の確認
+
+1. **GitHub Actionsの状態確認**
+   ```
+   https://github.com/hey-watchme/admin/actions
+   ```
+
+2. **コンテナログの確認**（必要時）
+   ```bash
+   ssh -i ~/watchme-key.pem ubuntu@3.24.16.82
+   docker logs watchme-admin --tail 50
+   ```
+
+### 🔄 手動デプロイ手順（緊急時のみ）
 
 #### 1. ローカルでのイメージビルドとECRプッシュ
 
@@ -399,6 +453,13 @@ docker run -d --name watchme-admin \
 問題が発生した場合は、プロジェクト管理者に連絡してください。
 
 ## 📅 更新履歴
+
+### 2025年9月29日
+- CI/CDパイプラインを実装（GitHub Actions）
+- 既読・未読機能を削除（設計上の問題のため）
+- UI改善：「WatchMe Admin」にタイトル統一
+- 通知タイプの詳細仕様を文書化
+- デプロイプロセスを完全自動化
 
 ### 2025年8月23日
 - 通知機能をグローバル通知とイベント通知に分離
