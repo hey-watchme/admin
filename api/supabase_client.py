@@ -37,16 +37,19 @@ class SupabaseClient:
         """データを取得"""
         url = f"{self.rest_url}/{table}"
         params = {"select": columns}
-        
+
         if filters:
             for key, value in filters.items():
                 params[key] = f"eq.{value}"
-        
+
         if order:
             params["order"] = order
-        
+
+        # 管理画面ではService Role Keyを使用してRLSをバイパス
+        headers = self.admin_headers if self.admin_headers else self.headers
+
         async with httpx.AsyncClient() as client:
-            response = await client.get(url, headers=self.headers, params=params)
+            response = await client.get(url, headers=headers, params=params)
             response.raise_for_status()
             return response.json()
 
