@@ -212,11 +212,13 @@ async def get_users(
             user_id = user.get("user_id")
             if user_id:
                 # user_devicesテーブルから連携デバイスを取得
+                print(f"🔍 Fetching devices for user: {user_id}")
                 devices = await supabase_client.select(
                     "user_devices",
                     columns="device_id,role",
                     filters={"user_id": user_id}
                 )
+                print(f"📱 Found {len(devices)} devices for user {user_id}: {devices}")
                 user["connected_devices"] = devices if devices else []
             else:
                 user["connected_devices"] = []
