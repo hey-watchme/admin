@@ -10,16 +10,28 @@ class SupabaseClient:
     def __init__(self):
         self.url = os.getenv("SUPABASE_URL")
         self.key = os.getenv("SUPABASE_KEY")
-        
+        self.service_role_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+
         if not self.url or not self.key:
             raise ValueError("SUPABASE_URL and SUPABASE_KEY must be set in environment variables")
-        
+
         self.rest_url = f"{self.url}/rest/v1"
+        self.auth_url = f"{self.url}/auth/v1"
         self.headers = {
             "apikey": self.key,
             "Authorization": f"Bearer {self.key}",
             "Content-Type": "application/json",
         }
+
+        # Admin API用のヘッダー（Service Role Key使用）
+        if self.service_role_key:
+            self.admin_headers = {
+                "apikey": self.service_role_key,
+                "Authorization": f"Bearer {self.service_role_key}",
+                "Content-Type": "application/json",
+            }
+        else:
+            self.admin_headers = None
 
     async def select(self, table: str, columns: str = "*", filters: Optional[Dict[str, Any]] = None, order: Optional[str] = None) -> List[Dict[str, Any]]:
         """データを取得"""
@@ -129,14 +141,26 @@ class SupabaseClient:
         """データを削除"""
         url = f"{self.rest_url}/{table}"
         params = {}
-        
+
         for key, value in filters.items():
             params[key] = f"eq.{value}"
-        
+
         async with httpx.AsyncClient() as client:
             response = await client.delete(url, headers=self.headers, params=params)
             response.raise_for_status()
             return response.status_code == 204
+
+    async def delete_auth_user(self, user_id: str) -> bool:
+        """auth.usersテーブルからユーザーを削除（Admin API使用）"""
+        if not self.admin_headers:
+            raise ValueError("SUPABASE_SERVICE_ROLE_KEY is not set. Cannot delete auth users.")
+
+        url = f"{self.auth_url}/admin/users/{user_id}"
+
+        async with httpx.AsyncClient() as client:
+            response = await client.delete(url, headers=self.admin_headers)
+            response.raise_for_status()
+            return response.status_code == 200
 
     # 基本的なCRUD操作のみ提供
     # すべての操作はmain.pyから直接select/insert/update/deleteメソッドを使用

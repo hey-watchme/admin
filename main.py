@@ -234,14 +234,29 @@ async def update_user(user_id: str, user_data: Dict[str, Any]):
 
 @app.delete("/api/users/{user_id}")
 async def delete_user(user_id: str):
-    """ユーザーを削除"""
+    """ユーザーを削除（デバイス紐付け解除 + auth.users削除）"""
     try:
-        result = await supabase_client.delete(
-            "users",
-            {"user_id": user_id}
-        )
-        return {"success": True, "message": "ユーザーを削除しました"}
+        # Step 1: user_devicesテーブルから該当ユーザーのレコードを削除（デバイス紐付け解除）
+        try:
+            await supabase_client.delete(
+                "user_devices",
+                {"user_id": user_id}
+            )
+            print(f"✅ user_devicesから削除完了: {user_id}")
+        except Exception as e:
+            print(f"⚠️ user_devices削除エラー（レコードが存在しない可能性）: {e}")
+
+        # Step 2: auth.usersテーブルから削除（Service Role Key使用）
+        # これによりON DELETE CASCADEでpublic.usersも自動削除される
+        await supabase_client.delete_auth_user(user_id)
+        print(f"✅ auth.usersから削除完了（public.usersも自動削除）: {user_id}")
+
+        return {
+            "success": True,
+            "message": "ユーザーを完全に削除しました（デバイス紐付け解除 + アカウント削除）"
+        }
     except Exception as e:
+        print(f"❌ ユーザー削除エラー: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 # --- デバイス管理 API ---
