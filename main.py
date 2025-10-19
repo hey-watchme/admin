@@ -198,7 +198,7 @@ async def get_users(
     page: int = Query(1, ge=1),
     per_page: int = Query(20, ge=1, le=100)
 ):
-    """ユーザー一覧を取得（ページネーション付き）"""
+    """ユーザー一覧を取得（ページネーション付き + 連携デバイス情報）"""
     try:
         result = await supabase_client.select_paginated(
             "users",
@@ -206,6 +206,21 @@ async def get_users(
             per_page=per_page,
             order="created_at.desc"
         )
+
+        # 各ユーザーの連携デバイスを取得
+        for user in result["items"]:
+            user_id = user.get("user_id")
+            if user_id:
+                # user_devicesテーブルから連携デバイスを取得
+                devices = await supabase_client.select(
+                    "user_devices",
+                    columns="device_id,role",
+                    filters={"user_id": user_id}
+                )
+                user["connected_devices"] = devices if devices else []
+            else:
+                user["connected_devices"] = []
+
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

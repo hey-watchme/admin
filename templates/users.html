@@ -30,6 +30,7 @@
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">名前</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">メール</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ステータス</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">連携中のデバイス</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">プラン</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ニュースレター</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">登録日</th>
@@ -76,8 +77,20 @@ async function loadUsers(page = 1) {
 function displayUsers(users) {
     const tbody = document.getElementById('users-tbody');
     tbody.innerHTML = '';
-    
+
     users.forEach(user => {
+        // 連携デバイスの表示文字列を作成
+        let devicesHtml = '<span class="text-gray-400">なし</span>';
+        if (user.connected_devices && user.connected_devices.length > 0) {
+            const deviceItems = user.connected_devices.map(device => {
+                const roleLabel = device.role === 'owner' ? '👑' : '👁️';
+                return `<div class="text-xs">
+                    ${roleLabel} <span class="font-mono">${device.device_id.substring(0, 8)}...</span>
+                </div>`;
+            }).join('');
+            devicesHtml = `<div class="space-y-1">${deviceItems}</div>`;
+        }
+
         const row = tbody.insertRow();
         row.innerHTML = `
             <td class="px-6 py-4 text-sm text-gray-900">
@@ -89,6 +102,9 @@ function displayUsers(users) {
                 <span class="px-2 py-1 text-xs rounded-full ${getStatusColor(user.status)}">
                     ${user.status}
                 </span>
+            </td>
+            <td class="px-6 py-4 text-sm text-gray-700">
+                ${devicesHtml}
             </td>
             <td class="px-6 py-4 text-sm text-gray-500">${user.subscription_plan || '-'}</td>
             <td class="px-6 py-4 text-sm text-gray-500">
