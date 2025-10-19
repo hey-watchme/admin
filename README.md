@@ -55,8 +55,11 @@ cd /Users/kaya.matsumoto/projects/watchme/admin
 ```bash
 SUPABASE_URL=your_supabase_project_url
 SUPABASE_KEY=your_supabase_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 PORT=9000
 ```
+
+**重要:** `SUPABASE_SERVICE_ROLE_KEY`はユーザー削除機能に必要です。Supabaseダッシュボードの「Settings > API」から取得してください。
 
 ### 3. 仮想環境のセットアップ
 
@@ -126,7 +129,38 @@ admin/
 | GET | `/api/users` | ユーザー一覧（ページネーション対応） |
 | POST | `/api/users` | 新規ユーザー作成 |
 | PUT | `/api/users/{id}` | ユーザー情報更新 |
-| DELETE | `/api/users/{id}` | ユーザー削除 |
+| DELETE | `/api/users/{id}` | **ユーザー完全削除**（詳細は下記） |
+
+#### ユーザー削除の仕様
+
+**エンドポイント:** `DELETE /api/users/{user_id}`
+
+**削除内容:**
+1. `user_devices` テーブルからデバイス紐付けを削除
+2. `auth.users` テーブルから認証情報を削除（Supabase Admin API使用）
+3. `public.users` テーブルから自動削除（`ON DELETE CASCADE`）
+
+**削除順序:**
+```
+user_devices (デバイス紐付け解除)
+    ↓
+auth.users (認証削除 - Service Role Key使用)
+    ↓
+public.users (自動削除 - CASCADE)
+```
+
+**レスポンス例:**
+```json
+{
+  "success": true,
+  "message": "ユーザーを完全に削除しました（デバイス紐付け解除 + アカウント削除）"
+}
+```
+
+**注意事項:**
+- この操作は**取り消し不可能**です
+- Service Role Keyが必要です（環境変数 `SUPABASE_SERVICE_ROLE_KEY`）
+- iOSアプリからも同じAPIを使用可能です
 
 ### デバイス管理
 | メソッド | エンドポイント | 説明 |
@@ -453,6 +487,15 @@ docker run -d --name watchme-admin \
 問題が発生した場合は、プロジェクト管理者に連絡してください。
 
 ## 📅 更新履歴
+
+### 2025年10月19日
+- ✅ **ユーザー完全削除機能を実装**
+  - `user_devices`（デバイス紐付け）の削除
+  - `auth.users`の削除（Supabase Admin API）
+  - `public.users`の自動削除（ON DELETE CASCADE）
+- Service Role Keyを環境変数に追加
+- CI/CDパイプラインに環境変数自動設定を追加
+- iOSアプリから同じAPIを使用可能に
 
 ### 2025年9月29日
 - CI/CDパイプラインを実装（GitHub Actions）
