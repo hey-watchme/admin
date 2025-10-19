@@ -15,34 +15,17 @@ echo "📥 Pulling latest image from ECR..."
 aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_REGISTRY}
 docker pull ${ECR_REGISTRY}/${ECR_REPOSITORY}:latest
 
-# 既存コンテナを停止して削除
-echo "🛑 Stopping existing containers..."
+# 既存コンテナを完全削除
+echo "🛑 Cleaning up existing containers..."
 
-# 1. 実行中のすべてのwatchme-adminコンテナを検索して停止
-echo "   Checking for running containers..."
-RUNNING_CONTAINERS=$(docker ps -q --filter "name=watchme-admin")
-if [ ! -z "$RUNNING_CONTAINERS" ]; then
-    echo "   Found running containers: $RUNNING_CONTAINERS"
-    docker stop $RUNNING_CONTAINERS
-    echo "   ✅ Stopped running containers"
-else
-    echo "   No running containers found"
-fi
+# docker-composeで管理されているコンテナを停止・削除
+docker-compose -f docker-compose.prod.yml down --remove-orphans || true
 
-# 2. 停止済みも含めて、すべてのwatchme-adminコンテナを削除
-echo "   Checking for existing containers..."
-ALL_CONTAINERS=$(docker ps -aq --filter "name=watchme-admin")
-if [ ! -z "$ALL_CONTAINERS" ]; then
-    echo "   Found existing containers: $ALL_CONTAINERS"
-    docker rm -f $ALL_CONTAINERS
-    echo "   ✅ Removed existing containers"
-else
-    echo "   No existing containers found"
-fi
+# watchme-admin という名前のコンテナを強制削除（念のため）
+docker rm -f watchme-admin 2>/dev/null || true
 
-# 3. docker-composeで管理されているコンテナも確実に停止
-echo "   Stopping docker-compose managed containers..."
-docker-compose -f docker-compose.prod.yml down || true
+# 確認
+echo "✅ Cleanup completed"
 
 # コンテナを起動
 echo "🚀 Starting new container..."
