@@ -251,9 +251,32 @@ async def update_user(user_id: str, user_data: Dict[str, Any]):
 
 @app.delete("/api/users/{user_id}")
 async def delete_user(user_id: str):
-    """ユーザーを削除（デバイス紐付け解除 + auth.users削除）"""
+    """ユーザーを削除（デバイス紐付け解除 + 孤立デバイス削除 + auth.users削除）"""
     try:
-        # Step 1: user_devicesテーブルから該当ユーザーのレコードを削除（デバイス紐付け解除）
+        # Step 1: このユーザーが所有するデバイスを取得
+        user_devices = await supabase_client.select(
+            "user_devices",
+            filters={"user_id": user_id}
+        )
+        print(f"📱 ユーザー {user_id} のデバイス数: {len(user_devices)}")
+
+        # Step 2: 各デバイスについて、他のユーザーが参照しているか確認
+        orphaned_devices = []
+        for user_device in user_devices:
+            device_id = user_device['device_id']
+
+            # このデバイスを参照している全ユーザーを取得
+            all_users_for_device = await supabase_client.select(
+                "user_devices",
+                filters={"device_id": device_id}
+            )
+
+            # このユーザーが唯一の参照者の場合、孤立デバイスとしてマーク
+            if len(all_users_for_device) == 1:
+                orphaned_devices.append(device_id)
+                print(f"🔍 孤立デバイス検出: {device_id}")
+
+        # Step 3: user_devicesテーブルから該当ユーザーのレコードを削除（デバイス紐付け解除）
         try:
             await supabase_client.delete(
                 "user_devices",
@@ -263,14 +286,26 @@ async def delete_user(user_id: str):
         except Exception as e:
             print(f"⚠️ user_devices削除エラー（レコードが存在しない可能性）: {e}")
 
-        # Step 2: auth.usersテーブルから削除（Service Role Key使用）
+        # Step 4: 孤立デバイスを削除
+        for device_id in orphaned_devices:
+            try:
+                await supabase_client.delete(
+                    "devices",
+                    {"device_id": device_id}
+                )
+                print(f"🗑️ 孤立デバイス削除完了: {device_id}")
+            except Exception as e:
+                print(f"⚠️ 孤立デバイス削除エラー: {device_id} - {e}")
+
+        # Step 5: auth.usersテーブルから削除（Service Role Key使用）
         # これによりON DELETE CASCADEでpublic.usersも自動削除される
         await supabase_client.delete_auth_user(user_id)
         print(f"✅ auth.usersから削除完了（public.usersも自動削除）: {user_id}")
 
         return {
             "success": True,
-            "message": "ユーザーを完全に削除しました（デバイス紐付け解除 + アカウント削除）"
+            "message": f"ユーザーを完全に削除しました（デバイス紐付け解除 + 孤立デバイス{len(orphaned_devices)}件削除 + アカウント削除）",
+            "orphaned_devices_deleted": len(orphaned_devices)
         }
     except Exception as e:
         print(f"❌ ユーザー削除エラー: {e}")
